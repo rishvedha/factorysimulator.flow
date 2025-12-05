@@ -1,0 +1,83 @@
+/* GLOBAL RESET */
+body, html {
+  margin: 0;
+  padding: 0;
+  font-family: Inter, sans-serif;
+}
+
+/* MAIN LAYOUT */
+.app-container {
+  display: flex;
+  height: 100vh;
+}
+
+/* LEFT SIDEBAR */
+.sidebar {
+  width: 300px;
+  background: #f5f5f7;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  border-right: 1px solid #ddd;
+}
+
+/* INPUT LABELS */
+.label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* INPUT BOXES */
+.input-box {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+/* TOGGLE BUTTON GRID */
+.toggle-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* BUTTONS */
+.btn {
+  background: #e6e6e6;
+  padding: 12px;
+  text-align: center;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btn.active {
+  background: #007bff;
+  color: white;
+}
+
+/* MIDDLE CANVAS */
+.canvas-area {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #222;
+}
+
+/* RIGHT PANEL */
+.stats-panel {
+  width: 380px;
+  background: white;
+  padding: 20px;
+  overflow-y: scroll;
+  border-left: 1px solid #ddd;
+}
+
+.stats-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
