@@ -1,0 +1,71 @@
+{
+  "machines": {
+    "filler": {
+      "name": "Filler Machine",
+      "description": "Fills bottles with liquid product",
+      "baseSpeed": 30,
+      "baseEnergyCost": 5,
+      "baseFailureRate": 3.0,
+      "maintenanceInterval": 168,
+      "maxTemperature": 85,
+      "criticalVibration": 4.0,
+      "upgradeSlots": 4,
+      "icon": "💧"
+    },
+    "capper": {
+      "name": "Capping Machine",
+      "description": "Applies caps to filled bottles",
+      "baseSpeed": 25,
+      "baseEnergyCost": 4,
+      "baseFailureRate": 2.0,
+      "maintenanceInterval": 144,
+      "maxTemperature": 75,
+      "criticalVibration": 3.5,
+      "upgradeSlots": 3,
+      "icon": "🔩"
+    },
+    "labeler": {
+      "name": "Labeling Machine",
+      "description": "Applies labels to bottles",
+      "baseSpeed": 28,
+      "baseEnergyCost": 4.5,
+      "baseFailureRate": 4.0,
+      "maintenanceInterval": 192,
+      "maxTemperature": 70,
+      "criticalVibration": 3.0,
+      "upgradeSlots": 4,
+      "icon": "🏷️"
+    },
+    "packaging": {
+      "name": "Packaging Unit",
+      "description": "Packages bottles into cases",
+      "baseSpeed": 20,
+      "baseEnergyCost": 6,
+      "baseFailureRate": 1.5,
+      "maintenanceInterval": 120,
+      "maxTemperature": 65,
+      "criticalVibration": 2.5,
+      "upgradeSlots": 3,
+      "icon": "📦"
+    }
+  },
+  
+  "productionLine": {
+    "bottlesPerCase": 24,
+    "casesPerPallet": 48,
+    "shiftHours": 8,
+    "shiftsPerDay": 3,
+    "daysPerWeek": 5,
+    "targetOEE": 85,
+    "targetEfficiency": 90,
+    "maxEnergyConsumption": 500
+  },
+  
+  "costs": {
+    "electricityCost": 0.12,
+    "maintenanceCost": 150,
+    "laborCost": 35,
+    "rawMaterialCost": 0.85,
+    "packagingCost": 0.45
+  }
+}

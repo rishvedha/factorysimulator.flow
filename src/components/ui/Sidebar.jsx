@@ -1,232 +1,131 @@
-import React from "react";
+import React, { useState } from 'react'
+import { useSimulation } from '../../context/SimulationContext'
 
-export default function Sidebar({ inputs, setInputs, upgrades, setUpgrades, sensor }) {
-  const updateField = (field, value) => {
-    setInputs(prev => ({ ...prev, [field]: Number(value) }));
-  };
-
-  const toggle = (key) => {
-    setUpgrades(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const upgradeConfigs = {
-    iot: {
-      label: "IoT Sensors",
-      icon: "📡",
-      cost: "₹1.2L",
-      benefit: "Real-time monitoring",
-      color: "#a15bbbff"
-    },
-    ai: {
-      label: "AI Analytics",
-      icon: "🤖",
-      cost: "₹2L",
-      benefit: "Predictive maintenance",
-      color: "#a15bbbff"
-    },
-    automation: {
-      label: "Automation",
-      icon: "⚙️",
-      cost: "₹3.5L",
-      benefit: "Reduced downtime",
-      color: "#a15bbbff"
-    }
-  };
-
+export default function Sidebar() {
+  const { state } = useSimulation()
+  const [selectedMachine, setSelectedMachine] = useState('filler')
+  
+  const machines = Object.values(state.machines)
+  const selectedMachineData = state.machines[selectedMachine]
+  
   return (
-    <div className="sidebar">
-      <div className="header-section">
-        <h2>🏭 Factory Controls</h2>
-        <p className="subtitle">Adjust parameters to optimize production</p>
-      </div>
-
-      <div className="input-group">
-        <label>
-          <span className="label-icon"></span>
-          Production Rate
-          <span className="unit">(units/hour)</span>
-        </label>
-        <div className="input-with-slider">
-          <input
-            type="range"
-            min="500"
-            max="2000"
-            step="50"
-            value={inputs.productionRate}
-            onChange={(e) => updateField("productionRate", e.target.value)}
-            className="slider"
-          />
-          <input
-            type="number"
-            value={inputs.productionRate}
-            onChange={(e) => updateField("productionRate", e.target.value)}
-            className="number-input"
-          />
-        </div>
-        <div className="hint">Higher speed may increase defects</div>
-      </div>
-
-      <div className="input-group">
-        <label>
-          <span className="label-icon"></span>
-          Target Defect Rate
-          <span className="unit">(%)</span>
-        </label>
-        <input
-          type="range"
-          min="0.5"
-          max="10"
-          step="0.1"
-          value={inputs.defectRate}
-          onChange={(e) => updateField("defectRate", e.target.value)}
-          className="slider"
-        />
-        <div className="value-display">
-          <span>{inputs.defectRate}%</span>
-          <span className="range">0.5% - 10%</span>
-        </div>
-      </div>
-
-      <div className="input-group">
-        <label>
-          <span className="label-icon"></span>
-          Shift Hours
-          <span className="unit">(per day)</span>
-        </label>
-        <div className="time-inputs">
-          {[8, 12, 16, 24].map(hours => (
-            <button
-              key={hours}
-              className={`time-btn ${inputs.shiftHours === hours ? 'active' : ''}`}
-              onClick={() => updateField("shiftHours", hours)}
-            >
-              {hours}h
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="input-group">
-        <label>
-          <span className="label-icon"></span>
-          Downtime
-          <span className="unit">(minutes/day)</span>
-        </label>
-        <input
-          type="number"
-          value={inputs.downtime || 0}
-          onChange={(e) => updateField("downtime", e.target.value)}
-          className="number-input full"
-          min="0"
-          max="240"
-        />
-      </div>
-
-      <div className="upgrades-section">
-        <h3>Digital Upgrades</h3>
-        <p className="section-subtitle">Toggle to see impact on KPIs</p>
-        
-        <div className="upgrades-grid">
-          {Object.entries(upgradeConfigs).map(([key, config]) => (
-            <div key={key} className="upgrade-card">
-              <div className="upgrade-header">
-                <span className="upgrade-icon">{config.icon}</span>
+    <div style={{
+      width: '280px',
+      background: '#111827',
+      borderRight: '1px solid #334155',
+      height: 'calc(100vh - 70px)',
+      overflowY: 'auto',
+      padding: '20px'
+    }}>
+      <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'white', marginBottom: '20px' }}>
+        Machine Dashboard
+      </h2>
+      
+      {/* Machine List */}
+      <div style={{ marginBottom: '24px' }}>
+        {machines.map((machine) => (
+          <button
+            key={machine.id}
+            onClick={() => setSelectedMachine(machine.id)}
+            style={{
+              width: '100%',
+              padding: '16px',
+              background: selectedMachine === machine.id ? 'rgba(59, 130, 246, 0.2)' : '#1f2937',
+              border: selectedMachine === machine.id ? '1px solid #3b82f6' : '1px solid #374151',
+              borderRadius: '8px',
+              textAlign: 'left',
+              marginBottom: '8px',
+              cursor: 'pointer',
+              color: 'white'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ fontSize: '20px' }}>
+                  {machine.id === 'filler' ? '💧' : 
+                   machine.id === 'capper' ? '🔩' : 
+                   machine.id === 'labeler' ? '🏷️' : '📦'}
+                </div>
                 <div>
-                  <div className="upgrade-name">{config.label}</div>
-                  <div className="upgrade-cost">{config.cost}</div>
+                  <div style={{ fontWeight: '500' }}>{machine.name}</div>
+                  <div style={{ fontSize: '0.875rem', color: '#9ca3af' }}>{machine.speed} bpm</div>
                 </div>
               </div>
-              <div className="upgrade-benefit">{config.benefit}</div>
-              <button
-                onClick={() => toggle(key)}
-                className={`toggle-btn ${upgrades[key] ? 'on' : 'off'}`}
-                style={upgrades[key] ? { background: config.color } : {}}
-              >
-                {upgrades[key] ? 'ACTIVE' : 'INACTIVE'}
-              </button>
+              <div style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: machine.status === 'running' ? '#10b981' : 
+                           machine.status === 'warning' ? '#f59e0b' : '#ef4444'
+              }} />
             </div>
-          ))}
-        </div>
+          </button>
+        ))}
       </div>
-
-      <div className="sensor-section">
-        <h3>Live Sensor Dashboard</h3>
-        
-        <div className="sensor-card">
-          <div className="sensor-header">
-            <span className="sensor-icon">o</span>
-            <div className="sensor-info">
-              <div className="sensor-label">Temperature</div>
-              <div className="sensor-value">{sensor.temperature?.toFixed(1) || "45.0"}°C</div>
+      
+      {/* Selected Machine Details */}
+      {selectedMachineData && (
+        <div style={{
+          background: '#1f2937',
+          borderRadius: '12px',
+          padding: '20px',
+          border: '1px solid #374151'
+        }}>
+          <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: 'white', marginBottom: '16px' }}>
+            {selectedMachineData.name}
+          </h3>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+            <div>
+              <div style={{ fontSize: '0.875rem', color: '#9ca3af', marginBottom: '4px' }}>Speed</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'white' }}>{selectedMachineData.speed} bpm</div>
             </div>
-            <div className={`sensor-status ${sensor.temperature > 55 ? 'danger' : sensor.temperature > 50 ? 'warning' : 'normal'}`}>
-              {sensor.temperature > 55 ? 'HIGH' : sensor.temperature > 50 ? 'WARN' : 'OK'}
+            <div>
+              <div style={{ fontSize: '0.875rem', color: '#9ca3af', marginBottom: '4px' }}>Efficiency</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#10b981' }}>{selectedMachineData.efficiency}%</div>
             </div>
-          </div>
-          <div className="sensor-bar">
-            <div 
-              className="sensor-fill"
-              style={{
-                width: `${Math.min(100, (sensor.temperature / 70) * 100)}%`,
-                background: sensor.temperature > 55 ? '#ef4444' : sensor.temperature > 50 ? '#f59e0b' : '#10b981'
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="sensor-card">
-          <div className="sensor-header">
-            <span className="sensor-icon">o</span>
-            <div className="sensor-info">
-              <div className="sensor-label">Vibration</div>
-              <div className="sensor-value">{sensor.vibration?.toFixed(2) || "3.00"} mm/s</div>
+            <div>
+              <div style={{ fontSize: '0.875rem', color: '#9ca3af', marginBottom: '4px' }}>Temp</div>
+              <div style={{ 
+                fontSize: '1.25rem', 
+                fontWeight: 'bold', 
+                color: selectedMachineData.temperature > 70 ? '#f59e0b' : '#60a5fa'
+              }}>
+                {selectedMachineData.temperature}°C
+              </div>
             </div>
-            <div className={`sensor-status ${sensor.vibration > 6 ? 'danger' : sensor.vibration > 5 ? 'warning' : 'normal'}`}>
-              {sensor.vibration > 6 ? 'HIGH' : sensor.vibration > 5 ? 'WARN' : 'OK'}
-            </div>
-          </div>
-          <div className="sensor-bar">
-            <div 
-              className="sensor-fill"
-              style={{
-                width: `${Math.min(100, (sensor.vibration / 8) * 100)}%`,
-                background: sensor.vibration > 6 ? '#ef4444' : sensor.vibration > 5 ? '#f59e0b' : '#f59e0b'
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="sensor-card">
-          <div className="sensor-header">
-            <span className="sensor-icon">o</span>
-            <div className="sensor-info">
-              <div className="sensor-label">Power Consumption</div>
-              <div className="sensor-value">{sensor.power?.toFixed(0) || "60"} kW</div>
-            </div>
-            <div className={`sensor-status ${sensor.power > 80 ? 'warning' : 'normal'}`}>
-              {sensor.power > 80 ? 'HIGH' : 'OK'}
+            <div>
+              <div style={{ fontSize: '0.875rem', color: '#9ca3af', marginBottom: '4px' }}>Energy</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#fbbf24' }}>{selectedMachineData.energyCost} kW</div>
             </div>
           </div>
-          <div className="sensor-bar">
-            <div 
-              className="sensor-fill"
-              style={{
-                width: `${Math.min(100, (sensor.power / 100) * 100)}%`,
-                background: sensor.power > 80 ? '#f59e0b' : '#3b82f6'
-              }}
-            />
+          
+          {/* Upgrades */}
+          <div>
+            <div style={{ fontSize: '0.875rem', color: '#9ca3af', marginBottom: '8px' }}>Active Upgrades</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {selectedMachineData.upgrades.length > 0 ? (
+                selectedMachineData.upgrades.map((upgrade, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      padding: '4px 12px',
+                      background: 'rgba(59, 130, 246, 0.2)',
+                      color: '#60a5fa',
+                      borderRadius: '20px',
+                      fontSize: '0.75rem'
+                    }}
+                  >
+                    {upgrade}
+                  </div>
+                ))
+              ) : (
+                <div style={{ color: '#6b7280', fontSize: '0.875rem' }}>No upgrades applied</div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-
-      <div className="tips-section">
-        <div className="tip">
-          <span className="tip-icon">💡</span>
-          <span className="tip-text">
-            Try enabling IoT sensors first to reduce defects by 20%
-          </span>
-        </div>
-      </div>
+      )}
     </div>
-  );
+  )
 }

@@ -1,0 +1,96 @@
+{
+  "upgrades": {
+    "speed": {
+      "name": "Speed Boost",
+      "description": "Increases machine throughput by 25%",
+      "cost": 500,
+      "effect": {
+        "speedMultiplier": 1.25,
+        "energyIncrease": 1.1,
+        "failureRateIncrease": 1.15
+      },
+      "icon": "⚡",
+      "category": "performance"
+    },
+    "efficiency": {
+      "name": "Efficiency Optimization",
+      "description": "Improves energy efficiency by 8%",
+      "cost": 400,
+      "effect": {
+        "energyMultiplier": 0.92,
+        "speedMultiplier": 1.05,
+        "failureRateMultiplier": 0.95
+      },
+      "icon": "🎯",
+      "category": "optimization"
+    },
+    "reliability": {
+      "name": "Reliability Package",
+      "description": "Reduces failure rate by 30%",
+      "cost": 600,
+      "effect": {
+        "failureRateMultiplier": 0.7,
+        "maintenanceIntervalMultiplier": 1.2,
+        "energyMultiplier": 1.05
+      },
+      "icon": "🛡️",
+      "category": "reliability"
+    },
+    "energy": {
+      "name": "Energy Saver",
+      "description": "Reduces energy consumption by 20%",
+      "cost": 450,
+      "effect": {
+        "energyMultiplier": 0.8,
+        "speedMultiplier": 0.95,
+        "failureRateMultiplier": 1.1
+      },
+      "icon": "🌱",
+      "category": "sustainability"
+    },
+    "automation": {
+      "name": "Automation Upgrade",
+      "description": "Enables automated quality inspection",
+      "cost": 800,
+      "effect": {
+        "qualityMultiplier": 1.15,
+        "speedMultiplier": 1.1,
+        "energyMultiplier": 1.08,
+        "requiresLevel": 2
+      },
+      "icon": "🤖",
+      "category": "automation"
+    },
+    "predictive": {
+      "name": "Predictive Maintenance",
+      "description": "Enables predictive maintenance alerts",
+      "cost": 700,
+      "effect": {
+        "failureRateMultiplier": 0.6,
+        "maintenanceIntervalMultiplier": 1.4,
+        "downtimeMultiplier": 0.5,
+        "requiresLevel": 3
+      },
+      "icon": "📊",
+      "category": "predictive"
+    }
+  },
+  
+  "levels": {
+    "1": {
+      "name": "Basic",
+      "maxUpgrades": 2,
+      "availableUpgrades": ["speed", "efficiency"]
+    },
+    "2": {
+      "name": "Advanced",
+      "maxUpgrades": 4,
+      "availableUpgrades": ["speed", "efficiency", "reliability", "energy"]
+    },
+    "3": {
+      "name": "Premium",
+      "maxUpgrades": 6,
+      "availableUpgrades": ["speed", "efficiency", "reliability", "energy", "automation", "predictive"]
+    }
+  }
+}

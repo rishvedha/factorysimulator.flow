@@ -1,329 +1,103 @@
-import React from "react";
+import React from 'react'
+import { useSimulation } from '../../context/SimulationContext'
 
-function Sparkline({ data = [], color = "#3b82f6", height = 40, width = 200, title }) {
-  if (!data.length) {
-    return (
-      <div className="sparkline-empty" style={{ width, height }}>
-        No data yet
-      </div>
-    );
-  }
-
-  const values = data.map(d => d.v);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const step = width / (values.length - 1 || 1);
+export default function StatsPanel() {
+  const { state } = useSimulation()
   
-  const points = values.map((v, i) => 
-    `${i * step},${height - ((v - min) / range) * height}`
-  ).join(" ");
-
-  const current = values[values.length - 1];
-  const prev = values.length > 1 ? values[values.length - 2] : current;
-  const trend = current > prev ? '↗' : current < prev ? '↘' : '→';
-
+  const stats = [
+    { label: 'Bottles Produced', value: state.bottlesProduced.toLocaleString(), icon: '🧴', color: '#60a5fa' },
+    { label: 'Energy Consumption', value: `${state.energyConsumption} kWh`, icon: '⚡', color: '#fbbf24' },
+    { label: 'Total Downtime', value: `${state.totalDowntime} mins`, icon: '⏱️', color: '#f87171' },
+    { label: 'Cost Savings', value: `$${state.moneySaved.toLocaleString()}`, icon: '💰', color: '#10b981' },
+    { label: 'OEE Score', value: `${state.oee.toFixed(1)}%`, icon: '📈', color: '#8b5cf6' },
+    { label: 'Active Alerts', value: '2', icon: '⚠️', color: '#f59e0b' }
+  ]
+  
   return (
-    <div className="sparkline-container">
-      <div className="sparkline-header">
-        <span className="sparkline-title">{title}</span>
-        <span className="sparkline-current">
-          {current.toFixed(1)} {trend}
-        </span>
-      </div>
-      <svg width={width} height={height} className="sparkline-svg">
-        <defs>
-          <linearGradient id={`gradient-${title}`} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor={color} stopOpacity="0.8" />
-            <stop offset="100%" stopColor={color} stopOpacity="0.2" />
-          </linearGradient>
-        </defs>
-        <polyline
-          fill={`url(#gradient-${title})`}
-          stroke={color}
-          strokeWidth="2"
-          points={points}
-          className="sparkline-line"
-        />
-      </svg>
-    </div>
-  );
-}
-
-function KPICard({ label, value, unit, trend, target, color }) {
-  return (
-    <div className="kpi-card">
-      <div className="kpi-header">
-        <span className="kpi-label">{label}</span>
-        {trend && (
-          <span className={`kpi-trend ${trend > 0 ? 'positive' : 'negative'}`}>
-            {trend > 0 ? '↗' : '↘'} {Math.abs(trend)}%
-          </span>
-        )}
-      </div>
-      <div className="kpi-value" style={{ color }}>
-        {value}<span className="kpi-unit">{unit}</span>
-      </div>
-      {target && (
-        <div className="kpi-target">
-          <div className="target-label">Target: {target}</div>
-          <div className="target-bar">
-            <div 
-              className="target-fill"
-              style={{ 
-                width: `${Math.min(100, (value / target) * 100)}%`,
-                background: color
-              }}
-            />
+    <div style={{
+      background: '#1e293b',
+      borderRadius: '16px',
+      padding: '24px',
+      border: '1px solid #334155',
+      marginBottom: '24px'
+    }}>
+      <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', marginBottom: '24px' }}>
+        Live Production Stats
+      </h2>
+      
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+        {stats.map((stat, index) => (
+          <div
+            key={index}
+            style={{
+              background: 'rgba(30, 41, 59, 0.5)',
+              border: '1px solid #374151',
+              borderRadius: '12px',
+              padding: '20px',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'translateY(-4px)'
+              e.currentTarget.style.borderColor = stat.color
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.borderColor = '#374151'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <div style={{ fontSize: '24px' }}>{stat.icon}</div>
+              <div style={{ fontSize: '0.875rem', color: stat.color, fontWeight: '500' }}>+12.5%</div>
+            </div>
+            
+            <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: stat.color, marginBottom: '4px' }}>
+              {stat.value}
+            </div>
+            
+            <div style={{ fontSize: '0.875rem', color: '#9ca3af' }}>{stat.label}</div>
           </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function OEECard({ value }) {
-  const getOEEStatus = (oee) => {
-    if (oee >= 85) return { label: "World Class", color: "#10b981" };
-    if (oee >= 75) return { label: "Good", color: "#3b82f6" };
-    if (oee >= 65) return { label: "Average", color: "#f59e0b" };
-    return { label: "Needs Improvement", color: "#ef4444" };
-  };
-
-  const status = getOEEStatus(value);
-
-  return (
-    <div className="oee-card">
-      <div className="oee-header">
-        <h3>Overall Equipment Effectiveness</h3>
-        <div className="oee-status" style={{ color: status.color }}>
-          {status.label}
-        </div>
+        ))}
       </div>
       
-      <div className="oee-display">
-        <div className="oee-value" style={{ color: status.color }}>
-          {value}%
-        </div>
-        <div className="oee-progress">
-          <div className="progress-bar">
-            <div 
-              className="progress-fill"
-              style={{ 
-                width: `${Math.min(100, value)}%`,
-                background: `linear-gradient(90deg, ${status.color}, ${status.color}aa)`
-              }}
-            />
+      {/* Production Rate Bar */}
+      <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid #374151' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <div>
+            <div style={{ fontSize: '0.875rem', color: '#9ca3af' }}>Current Production Rate</div>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>
+              {state.bottlesPerMinute} <span style={{ fontSize: '1rem', color: '#9ca3af' }}>bottles/min</span>
+            </div>
           </div>
-          <div className="progress-labels">
-            <span>0%</span>
-            <span>50%</span>
-            <span>100%</span>
+          <div style={{
+            padding: '6px 12px',
+            background: state.bottlesPerMinute > 40 ? 'rgba(16, 185, 129, 0.2)' : 
+                       state.bottlesPerMinute > 30 ? 'rgba(245, 158, 11, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+            color: state.bottlesPerMinute > 40 ? '#10b981' : 
+                   state.bottlesPerMinute > 30 ? '#f59e0b' : '#ef4444',
+            borderRadius: '20px',
+            fontWeight: '500',
+            fontSize: '0.875rem'
+          }}>
+            {state.bottlesPerMinute > 40 ? 'Optimal' : state.bottlesPerMinute > 30 ? 'Good' : 'Low'}
           </div>
         </div>
-      </div>
-
-      <div className="oee-components">
-        <div className="component">
-          <div className="component-label">Availability</div>
-          <div className="component-value">{Math.round(value * 0.33)}%</div>
+        
+        <div style={{ height: '8px', background: '#374151', borderRadius: '4px', overflow: 'hidden' }}>
+          <div 
+            style={{
+              height: '100%',
+              background: 'linear-gradient(90deg, #10b981, #fbbf24, #ef4444)',
+              width: `${(state.bottlesPerMinute / 60) * 100}%`,
+              borderRadius: '4px'
+            }}
+          />
         </div>
-        <div className="component">
-          <div className="component-label">Performance</div>
-          <div className="component-value">{Math.round(value * 0.33)}%</div>
-        </div>
-        <div className="component">
-          <div className="component-label">Quality</div>
-          <div className="component-value">{Math.round(value * 0.34)}%</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '0.75rem', color: '#6b7280' }}>
+          <span>0 bpm</span>
+          <span>Target: 50 bpm</span>
+          <span>60 bpm</span>
         </div>
       </div>
     </div>
-  );
-}
-
-export default function StatsPanel({ stats = {}, sensor, upgrades }) {
-  const {
-    dailyOutput = 0,
-    dailyDefects = 0,
-    availability = 0,
-    performance = 0,
-    quality = 0,
-    OEE = 0,
-    mtbf = null,
-    mttr = null,
-    invested = 0,
-    annualSavings = 0,
-    paybackYears = null,
-    history = {}
-  } = stats;
-
-  const efficiency = dailyOutput > 0 ? 
-    ((dailyOutput - dailyDefects) / dailyOutput) * 100 : 0;
-
-  return (
-    <div className="stats-panel">
-      <div className="panel-header">
-        <h2>Production Analytics</h2>
-        <div className="live-indicator">
-          <span className="live-dot" /> LIVE
-        </div>
-      </div>
-
-      <div className="quick-stats">
-        <div className="quick-stat">
-          <div className="stat-label">Today's Output</div>
-          <div className="stat-value">{dailyOutput.toLocaleString()}</div>
-          <div className="stat-unit">units</div>
-        </div>
-        <div className="quick-stat">
-          <div className="stat-label">Defects</div>
-          <div className="stat-value">{dailyDefects.toLocaleString()}</div>
-          <div className="stat-unit">units</div>
-        </div>
-        <div className="quick-stat">
-          <div className="stat-label">Efficiency</div>
-          <div className="stat-value">{efficiency.toFixed(1)}%</div>
-          <div className="stat-unit">yield</div>
-        </div>
-      </div>
-
-      <OEECard value={OEE} />
-
-      <div className="kpi-grid">
-        <KPICard 
-          label="Availability" 
-          value={availability} 
-          unit="%" 
-          target={95}
-          color="#3b82f6"
-        />
-        <KPICard 
-          label="Performance" 
-          value={performance} 
-          unit="%" 
-          target={100}
-          color="#3b82f6"
-        />
-        <KPICard 
-          label="Quality" 
-          value={quality} 
-          unit="%" 
-          target={99}
-          color="#3b82f6"
-        />
-      </div>
-
-      <div className="reliability-section">
-        <h3>Reliability Metrics</h3>
-        <div className="reliability-grid">
-          <div className="metric-card">
-            <div className="metric-icon"></div>
-            <div className="metric-content">
-              <div className="metric-label">MTBF</div>
-              <div className="metric-value">
-                {mtbf ? `${mtbf}s` : "—"}
-              </div>
-              <div className="metric-desc">Mean Time Between Failures</div>
-            </div>
-          </div>
-          <div className="metric-card">
-            <div className="metric-icon"></div>
-            <div className="metric-content">
-              <div className="metric-label">MTTR</div>
-              <div className="metric-value">
-                {mttr ? `${mttr}s` : "—"}
-              </div>
-              <div className="metric-desc">Mean Time To Repair</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="sensor-trends">
-        <h3>Sensor Trends</h3>
-        <div className="trends-grid">
-          <Sparkline 
-            data={history.temp || []} 
-            color="#ef4444" 
-            title="Temperature (°C)"
-          />
-          <Sparkline 
-            data={history.vib || []} 
-            color="#f59e0b" 
-            title="Vibration (mm/s)"
-          />
-          <Sparkline 
-            data={history.power || []} 
-            color="#3b82f6" 
-            title="Power (kW)"
-          />
-        </div>
-      </div>
-
-      <div className="financial-section">
-        <h3>💡 Financial Impact</h3>
-        <div className="financial-cards">
-          <div className="financial-card">
-            <div className="financial-header">
-              <div className="financial-label">Total Investment</div>
-              <div className="financial-badge">Upgrades</div>
-            </div>
-            <div className="financial-value">
-              ₹{invested.toLocaleString()}
-            </div>
-          </div>
-
-          <div className="financial-card">
-            <div className="financial-header">
-              <div className="financial-label">Annual Savings</div>
-              <div className="financial-badge success">Estimate</div>
-            </div>
-            <div className="financial-value">
-              ₹{annualSavings.toLocaleString()}
-            </div>
-          </div>
-
-          {paybackYears && (
-            <div className="financial-card highlight">
-              <div className="financial-header">
-                <div className="financial-label">Payback Period</div>
-                <div className="financial-badge warning">
-                  {paybackYears <= 2 ? "Quick ROI" : "Long Term"}
-                </div>
-              </div>
-              <div className="financial-value large">
-                {paybackYears} years
-              </div>
-              <div className="financial-note">
-                {paybackYears <= 2 
-                  ? "Excellent investment! ✅" 
-                  : paybackYears <= 5 
-                  ? "Good long-term investment 📈" 
-                  : "Consider phased implementation ⚠️"
-                }
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="insights-section">
-        <h3>💡 Insights</h3>
-        <div className="insight-card">
-          {OEE < 70 && (
-            <p>Consider enabling IoT sensors to improve equipment monitoring and reduce defects.</p>
-          )}
-          {paybackYears && paybackYears > 3 && (
-            <p>Focus on one upgrade at a time for better ROI calculation.</p>
-          )}
-          {sensor.temperature > 55 && (
-            <p>High temperature detected! This may increase defect rates.</p>
-          )}
-          <p className="insight-note">
-            Based on industry benchmarks for bottle manufacturing. Results may vary with actual data.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
+  )
 }
