@@ -3,7 +3,7 @@ import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import { SimulationProvider } from './context/SimulationContext'
 import FactoryGrid2D from "./components/builder/FactoryGrid2D";
-import Factory3DView from './simulation/Factory3DView'
+import Factory3DView from './simulation3d/Factory3DView'
 
 export default function App() {
   return (
