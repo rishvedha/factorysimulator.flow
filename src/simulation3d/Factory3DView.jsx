@@ -15,7 +15,7 @@ import Bottle from "./Bottle";
 function ConveyorSystem({ nodes, bottles = [] }) {
   if (!nodes || nodes.length < 2) return null;
 
-  // Create conveyor belt path
+// Create conveyor belt path
   const curvePoints = nodes.map(node => 
     new THREE.Vector3(node.pos[0], 0.5, node.pos[2])
   );
