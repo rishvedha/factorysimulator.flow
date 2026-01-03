@@ -10,66 +10,28 @@ import FillerMachine from "./FillerMachine";
 import CapperMachine from "./CapperMachine";
 import LabelerMachine from "./LabelerMachine";
 import PackagingMachine from "./PackagingMachine";
-import Bottle from "./Bottle";
+import AnimatedBottle from "./AnimatedBottle";
 
-function ConveyorSystem({ nodes, bottles = [] }) {
-  if (!nodes || nodes.length < 2) return null;
-
-// Create conveyor belt path
-  const curvePoints = nodes.map(node => 
-    new THREE.Vector3(node.pos[0], 0.5, node.pos[2])
-  );
+// Simple conveyor segment between two points
+function ConveyorSegment({ from, to }) {
+  if (!from || !to) return null;
   
-  const curve = new THREE.CatmullRomCurve3(curvePoints);
+  const length = Math.hypot(to.x - from.x, to.z - from.z);
+  const angle = Math.atan2(to.x - from.x, to.z - from.z);
   
   return (
-    <group>
-      {/* Conveyor belt */}
-      <mesh>
-        <tubeGeometry args={[curve, 100, 1, 8, false]} />
-        <meshStandardMaterial color="#475569" side={THREE.DoubleSide} />
+    <mesh
+      position={[(from.x + to.x) / 2, 0.3, (from.z + to.z) / 2]}
+      rotation={[0, angle, 0]}
+    >
+      <boxGeometry args={[1.2, 0.2, length]} />
+      <meshStandardMaterial color="#475569" />
+      {/* Conveyor belt top */}
+      <mesh position={[0, 0.15, 0]}>
+        <boxGeometry args={[1, 0.05, length]} />
+        <meshStandardMaterial color="#64748b" />
       </mesh>
-      
-      {/* Conveyor belt texture (moving) */}
-      <mesh position={[0, 0.6, 0]}>
-        <tubeGeometry args={[curve, 200, 0.8, 8, false]} />
-        <meshStandardMaterial color="#94a3b8" side={THREE.DoubleSide} />
-      </mesh>
-      
-      {/* Conveyor supports */}
-      {curvePoints.map((point, i) => (
-        <mesh key={i} position={[point.x, 0, point.z]}>
-          <cylinderGeometry args={[0.3, 0.3, 1, 8]} />
-          <meshStandardMaterial color="#64748b" />
-        </mesh>
-      ))}
-      
-      {/* Bottles on conveyor */}
-      {bottles.map((bottle, i) => {
-        if (!bottle.position) return null;
-        const progress = bottle.progress || 0;
-        const segmentIndex = Math.floor(progress * (curvePoints.length - 1));
-        const segmentProgress = progress * (curvePoints.length - 1) - segmentIndex;
-        
-        if (segmentIndex >= curvePoints.length - 1) return null;
-        
-        const start = curvePoints[segmentIndex];
-        const end = curvePoints[segmentIndex + 1];
-        
-        const x = THREE.MathUtils.lerp(start.x, end.x, segmentProgress);
-        const z = THREE.MathUtils.lerp(start.z, end.z, segmentProgress);
-        
-        return (
-          <Bottle
-            key={i}
-            position={[x, 1.5, z]}
-            stage={bottle.stage || 'empty'}
-            size={0.7}
-            progress={bottle.fillProgress || 0}
-          />
-        );
-      })}
-    </group>
+    </mesh>
   );
 }
 
@@ -91,7 +53,8 @@ function MachineStation({ node, stage }) {
         return <CapperMachine {...commonProps} bottles={Array(6).fill({ progress: 0.6 })} cappingProgress={0.5} />;
       case 'labeler':
         return <LabelerMachine {...commonProps} bottles={Array(4).fill({})} />;
-      case 'packaging':
+      case 'packager':
+      case 'packaging': // Support both for backwards compatibility
         return <PackagingMachine {...commonProps} bottles={Array(24).fill({})} packagingProgress={0.8} />;
       default:
         return null;
@@ -137,8 +100,7 @@ function MachineStation({ node, stage }) {
 
 export default function Factory3DView() {
   const { factoryLayout } = useSimulation();
-  const [simulationTime, setSimulationTime] = useState(0);
-  const [bottlesOnLine, setBottlesOnLine] = useState([]);
+  const [bottles, setBottles] = useState([]);
 
   const sim = useMemo(
     () =>
@@ -149,36 +111,135 @@ export default function Factory3DView() {
     [factoryLayout]
   );
 
-  // Generate bottles on conveyor
-  useEffect(() => {
-    if (sim.nodes.length === 0) return;
+  // Get machine positions in order (feeder → filler → capper → labeler → packager)
+  const machinePositions = useMemo(() => {
+    if (!sim.nodes || sim.nodes.length === 0) return null;
 
-    const bottles = [];
-    const stages = ['empty', 'filled', 'capped', 'labeled', 'packaged'];
-    
-    // Create bottles at different positions
-    for (let i = 0; i < 20; i++) {
-      const progress = (i / 20) * 0.8; // 80% of line filled
-      const stageIndex = Math.min(Math.floor(progress * stages.length), stages.length - 1);
-      
-      bottles.push({
-        id: `bottle-${i}`,
-        position: [0, 1.5, 0],
-        stage: stages[stageIndex],
-        progress: progress,
-        fillProgress: Math.min(progress * 1.5, 1)
-      });
-    }
-    
-    setBottlesOnLine(bottles);
-    
-    // Update simulation time
+    const positions = {};
+    sim.nodes.forEach(node => {
+      positions[node.type] = { x: node.pos[0], z: node.pos[2] };
+    });
+
+    return positions;
+  }, [sim.nodes]);
+
+  // Spawn bottles from feeder
+  useEffect(() => {
+    if (!machinePositions || !machinePositions.feeder) return;
+
     const interval = setInterval(() => {
-      setSimulationTime(prev => prev + 0.1);
-    }, 100);
-    
+      setBottles((prev) => [
+        ...prev,
+        {
+          id: Date.now() + Math.random(),
+          stage: "moveToFill",
+          mode: "move",
+          progress: 0,
+          speed: 0.8, // Movement speed
+          waitTime: 0,
+          fillLevel: 0,
+          capProgress: 0,
+          labelProgress: 0,
+          packProgress: 0,
+        },
+      ]);
+    }, 6000); // Spawn every 6 seconds
+
     return () => clearInterval(interval);
-  }, [sim.nodes.length]);
+  }, [machinePositions]);
+
+  // Handle bottle stage transitions
+  const onBottleDone = (id) => {
+    setBottles((prev) =>
+      prev.flatMap((b) => {
+        if (b.id !== id) return b;
+
+        // Move to filler → WAIT & FILL
+        if (b.stage === "moveToFill") {
+          return {
+            ...b,
+            stage: "fill",
+            mode: "wait",
+            waitTime: 0,
+            fillLevel: 0,
+          };
+        }
+
+        // Filling done → move to capper
+        if (b.stage === "fill") {
+          return {
+            ...b,
+            stage: "moveToCap",
+            mode: "move",
+            progress: 0,
+            fillLevel: 1,
+          };
+        }
+
+        // Arrived at capper → WAIT & CAP
+        if (b.stage === "moveToCap") {
+          return {
+            ...b,
+            stage: "cap",
+            mode: "wait",
+            waitTime: 0,
+            capProgress: 0,
+          };
+        }
+
+        // Cap done → move to labeler
+        if (b.stage === "cap") {
+          return {
+            ...b,
+            stage: "moveToLabel",
+            mode: "move",
+            progress: 0,
+            capProgress: 1,
+          };
+        }
+
+        // Arrived at labeler → WAIT & LABEL
+        if (b.stage === "moveToLabel") {
+          return {
+            ...b,
+            stage: "label",
+            mode: "wait",
+            waitTime: 0,
+            labelProgress: 0,
+          };
+        }
+
+        // Label done → move to packager
+        if (b.stage === "label") {
+          return {
+            ...b,
+            stage: "moveToPack",
+            mode: "move",
+            progress: 0,
+            labelProgress: 1,
+          };
+        }
+
+        // Arrived at packager → WAIT & PACK
+        if (b.stage === "moveToPack") {
+          return {
+            ...b,
+            stage: "pack",
+            mode: "wait",
+            waitTime: 0,
+            packProgress: 0,
+          };
+        }
+
+        // Packed → remove from simulation
+        if (b.stage === "pack") {
+          return [];
+        }
+
+        return b;
+      })
+    );
+  };
 
   if (!factoryLayout || factoryLayout.length === 0) {
     return (
@@ -332,23 +393,99 @@ export default function Factory3DView() {
           position={[0, 0.1, 0]} 
         />
 
-        {/* Conveyor system */}
-        <ConveyorSystem nodes={sim.nodes} bottles={bottlesOnLine} />
+        {/* Conveyor segments between machines */}
+        {machinePositions && sim.nodes.length >= 2 && (
+          <>
+            {machinePositions.feeder && machinePositions.filler && (
+              <ConveyorSegment
+                from={machinePositions.feeder}
+                to={machinePositions.filler}
+              />
+            )}
+            {machinePositions.filler && machinePositions.capper && (
+              <ConveyorSegment
+                from={machinePositions.filler}
+                to={machinePositions.capper}
+              />
+            )}
+            {machinePositions.capper && machinePositions.labeler && (
+              <ConveyorSegment
+                from={machinePositions.capper}
+                to={machinePositions.labeler}
+              />
+            )}
+            {machinePositions.labeler && machinePositions.packager && (
+              <ConveyorSegment
+                from={machinePositions.labeler}
+                to={machinePositions.packager}
+              />
+            )}
+          </>
+        )}
 
         {/* Machine stations */}
         {sim.nodes.map((node) => (
           <MachineStation key={node.id} node={node} />
         ))}
 
-        {/* Animated items from simulation */}
-        {sim.items.map((item) => (
-          <Bottle
-            key={item.id}
-            position={[item.spawnTime * 10, 1.5, 0]}
-            stage="empty"
-            size={0.7}
-          />
-        ))}
+        {/* Animated bottles */}
+        {machinePositions &&
+          bottles.map((bottle) => {
+            // Determine which segment the bottle is on
+            if (bottle.stage === "moveToFill" || bottle.stage === "fill") {
+              if (!machinePositions.feeder || !machinePositions.filler) return null;
+              return (
+                <AnimatedBottle
+                  key={bottle.id}
+                  bottle={bottle}
+                  from={{ x: machinePositions.feeder.x, z: machinePositions.feeder.z }}
+                  to={{ x: machinePositions.filler.x, z: machinePositions.filler.z }}
+                  onDone={onBottleDone}
+                />
+              );
+            }
+
+            if (bottle.stage === "moveToCap" || bottle.stage === "cap") {
+              if (!machinePositions.filler || !machinePositions.capper) return null;
+              return (
+                <AnimatedBottle
+                  key={bottle.id}
+                  bottle={bottle}
+                  from={{ x: machinePositions.filler.x, z: machinePositions.filler.z }}
+                  to={{ x: machinePositions.capper.x, z: machinePositions.capper.z }}
+                  onDone={onBottleDone}
+                />
+              );
+            }
+
+            if (bottle.stage === "moveToLabel" || bottle.stage === "label") {
+              if (!machinePositions.capper || !machinePositions.labeler) return null;
+              return (
+                <AnimatedBottle
+                  key={bottle.id}
+                  bottle={bottle}
+                  from={{ x: machinePositions.capper.x, z: machinePositions.capper.z }}
+                  to={{ x: machinePositions.labeler.x, z: machinePositions.labeler.z }}
+                  onDone={onBottleDone}
+                />
+              );
+            }
+
+            if (bottle.stage === "moveToPack" || bottle.stage === "pack") {
+              if (!machinePositions.labeler || !machinePositions.packager) return null;
+              return (
+                <AnimatedBottle
+                  key={bottle.id}
+                  bottle={bottle}
+                  from={{ x: machinePositions.labeler.x, z: machinePositions.labeler.z }}
+                  to={{ x: machinePositions.packager.x, z: machinePositions.packager.z }}
+                  onDone={onBottleDone}
+                />
+              );
+            }
+
+            return null;
+          })}
       </Canvas>
 
       {/* Production Stage Indicators */}
