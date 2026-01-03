@@ -101,6 +101,13 @@ function MachineStation({ node, stage }) {
 export default function Factory3DView() {
   const { factoryLayout } = useSimulation();
   const [bottles, setBottles] = useState([]);
+  const [simulationStatus, setSimulationStatus] = useState('idle'); // idle, running, paused, stopped
+  const [simulationSpeed, setSimulationSpeed] = useState(1); // 0.5x, 1x, 2x
+  const [productionMetrics, setProductionMetrics] = useState({
+    totalBottles: 0,
+    bottlesCompleted: 0,
+    elapsedTime: 0
+  });
 
   const sim = useMemo(
     () =>
@@ -123,10 +130,25 @@ export default function Factory3DView() {
     return positions;
   }, [sim.nodes]);
 
-  // Spawn bottles from feeder
+  // Update metrics only when simulation is running
   useEffect(() => {
-    if (!machinePositions || !machinePositions.feeder) return;
+    if (simulationStatus !== 'running') return;
 
+    const interval = setInterval(() => {
+      setProductionMetrics(prev => ({
+        ...prev,
+        elapsedTime: prev.elapsedTime + 0.1 * simulationSpeed
+      }));
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [simulationStatus, simulationSpeed]);
+
+  // Spawn bottles from feeder (only when running)
+  useEffect(() => {
+    if (!machinePositions || !machinePositions.feeder || simulationStatus !== 'running') return;
+
+    const spawnInterval = 6000 / simulationSpeed; // Adjust spawn rate based on speed
     const interval = setInterval(() => {
       setBottles((prev) => [
         ...prev,
@@ -135,7 +157,7 @@ export default function Factory3DView() {
           stage: "moveToFill",
           mode: "move",
           progress: 0,
-          speed: 0.8, // Movement speed
+          speed: 0.8, // Movement speed (will be multiplied by simulationSpeed)
           waitTime: 0,
           fillLevel: 0,
           capProgress: 0,
@@ -143,10 +165,11 @@ export default function Factory3DView() {
           packProgress: 0,
         },
       ]);
-    }, 6000); // Spawn every 6 seconds
+      setProductionMetrics(prev => ({ ...prev, totalBottles: prev.totalBottles + 1 }));
+    }, spawnInterval);
 
     return () => clearInterval(interval);
-  }, [machinePositions]);
+  }, [machinePositions, simulationStatus, simulationSpeed]);
 
   // Handle bottle stage transitions
   const onBottleDone = (id) => {
@@ -233,12 +256,36 @@ export default function Factory3DView() {
 
         // Packed → remove from simulation
         if (b.stage === "pack") {
+          setProductionMetrics(prev => ({ ...prev, bottlesCompleted: prev.bottlesCompleted + 1 }));
           return [];
         }
 
         return b;
       })
     );
+  };
+
+  // Simulation control handlers
+  const handleStart = () => {
+    setSimulationStatus('running');
+  };
+
+  const handlePause = () => {
+    setSimulationStatus('paused');
+  };
+
+  const handleStop = () => {
+    setSimulationStatus('stopped');
+  };
+
+  const handleReset = () => {
+    setSimulationStatus('idle');
+    setBottles([]);
+    setProductionMetrics({
+      totalBottles: 0,
+      bottlesCompleted: 0,
+      elapsedTime: 0
+    });
   };
 
   if (!factoryLayout || factoryLayout.length === 0) {
@@ -301,7 +348,112 @@ export default function Factory3DView() {
           <div style={{ fontSize: 28, marginRight: 12 }}>🍾</div>
           <div>
             <div style={{ fontWeight: 700, fontSize: 18 }}>Bottle Production</div>
-            <div style={{ fontSize: 12, color: "#94a3b8" }}>Real-time Simulation</div>
+            <div style={{ fontSize: 12, color: "#94a3b8" }}>
+              {simulationStatus === 'running' ? '🟢 Running' : 
+               simulationStatus === 'paused' ? '🟡 Paused' : 
+               simulationStatus === 'stopped' ? '🔴 Stopped' : '⚪ Idle'}
+            </div>
+          </div>
+        </div>
+
+        {/* Simulation Controls */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>Simulation Controls</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+            {simulationStatus === 'running' ? (
+              <button
+                onClick={handlePause}
+                style={{
+                  padding: "10px",
+                  background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 8,
+                  fontSize: 12,
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                ⏸ Pause
+              </button>
+            ) : (
+              <button
+                onClick={handleStart}
+                style={{
+                  padding: "10px",
+                  background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: 8,
+                  fontSize: 12,
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                ▶ Start
+              </button>
+            )}
+            <button
+              onClick={handleStop}
+              style={{
+                padding: "10px",
+                background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+                color: "white",
+                border: "none",
+                borderRadius: 8,
+                fontSize: 12,
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+            >
+              ⏹ Stop
+            </button>
+          </div>
+          <button
+            onClick={handleReset}
+            style={{
+              width: "100%",
+              padding: "10px",
+              background: "rgba(255,255,255,0.1)",
+              color: "white",
+              border: "1px solid rgba(255,255,255,0.2)",
+              borderRadius: 8,
+              fontSize: 12,
+              cursor: "pointer",
+              fontWeight: 600,
+            }}
+          >
+            🔄 Reset
+          </button>
+        </div>
+
+        {/* Speed Control */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>Simulation Speed</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {[0.5, 1, 2].map((speed) => (
+              <button
+                key={speed}
+                onClick={() => setSimulationSpeed(speed)}
+                style={{
+                  flex: 1,
+                  padding: "8px",
+                  background: simulationSpeed === speed 
+                    ? "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)" 
+                    : "rgba(255,255,255,0.05)",
+                  color: "white",
+                  border: simulationSpeed === speed 
+                    ? "2px solid #60a5fa" 
+                    : "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: 8,
+                  fontSize: 11,
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                {speed}x
+              </button>
+            ))}
           </div>
         </div>
         
@@ -314,9 +466,21 @@ export default function Factory3DView() {
             </div>
             <div style={{ background: "rgba(255,255,255,0.05)", padding: 10, borderRadius: 8 }}>
               <div style={{ fontSize: 11, color: "#94a3b8" }}>Bottles/min</div>
-              <div style={{ fontSize: 18, fontWeight: 700 }}>{Math.floor(sim.throughputPerSec * 60)}</div>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>
+                {simulationStatus === 'running' ? Math.floor(sim.throughputPerSec * 60 * simulationSpeed) : 0}
+              </div>
             </div>
           </div>
+          <div style={{ background: "rgba(255,255,255,0.05)", padding: 10, borderRadius: 8, marginTop: 10 }}>
+            <div style={{ fontSize: 11, color: "#94a3b8" }}>Bottles Produced</div>
+            <div style={{ fontSize: 18, fontWeight: 700 }}>{productionMetrics.bottlesCompleted}</div>
+          </div>
+          {simulationStatus === 'running' && (
+            <div style={{ background: "rgba(255,255,255,0.05)", padding: 10, borderRadius: 8, marginTop: 10 }}>
+              <div style={{ fontSize: 11, color: "#94a3b8" }}>Time Elapsed</div>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>{productionMetrics.elapsedTime.toFixed(1)}s</div>
+            </div>
+          )}
         </div>
         
         <div style={{ marginBottom: 20 }}>
@@ -431,6 +595,7 @@ export default function Factory3DView() {
         {/* Animated bottles */}
         {machinePositions &&
           bottles.map((bottle) => {
+            const isPaused = simulationStatus === 'paused' || simulationStatus === 'stopped' || simulationStatus === 'idle';
             // Determine which segment the bottle is on
             if (bottle.stage === "moveToFill" || bottle.stage === "fill") {
               if (!machinePositions.feeder || !machinePositions.filler) return null;
@@ -441,6 +606,8 @@ export default function Factory3DView() {
                   from={{ x: machinePositions.feeder.x, z: machinePositions.feeder.z }}
                   to={{ x: machinePositions.filler.x, z: machinePositions.filler.z }}
                   onDone={onBottleDone}
+                  speedMultiplier={simulationSpeed}
+                  isPaused={isPaused}
                 />
               );
             }
@@ -454,6 +621,8 @@ export default function Factory3DView() {
                   from={{ x: machinePositions.filler.x, z: machinePositions.filler.z }}
                   to={{ x: machinePositions.capper.x, z: machinePositions.capper.z }}
                   onDone={onBottleDone}
+                  speedMultiplier={simulationSpeed}
+                  isPaused={isPaused}
                 />
               );
             }
@@ -467,6 +636,8 @@ export default function Factory3DView() {
                   from={{ x: machinePositions.capper.x, z: machinePositions.capper.z }}
                   to={{ x: machinePositions.labeler.x, z: machinePositions.labeler.z }}
                   onDone={onBottleDone}
+                  speedMultiplier={simulationSpeed}
+                  isPaused={isPaused}
                 />
               );
             }
@@ -480,6 +651,8 @@ export default function Factory3DView() {
                   from={{ x: machinePositions.labeler.x, z: machinePositions.labeler.z }}
                   to={{ x: machinePositions.packager.x, z: machinePositions.packager.z }}
                   onDone={onBottleDone}
+                  speedMultiplier={simulationSpeed}
+                  isPaused={isPaused}
                 />
               );
             }

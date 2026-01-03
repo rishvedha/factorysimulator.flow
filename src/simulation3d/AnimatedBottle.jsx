@@ -5,7 +5,7 @@ import * as THREE from "three";
 /**
  * Animated Bottle that moves along paths and updates its visual state
  */
-export default function AnimatedBottle({ bottle, from, to, onDone }) {
+export default function AnimatedBottle({ bottle, from, to, onDone, speedMultiplier = 1, isPaused = false }) {
   const ref = useRef();
 
   // Initialize position
@@ -22,6 +22,12 @@ export default function AnimatedBottle({ bottle, from, to, onDone }) {
   }, []);
 
   useFrame((_, delta) => {
+    // Don't animate if paused
+    if (isPaused) return;
+
+    // Apply speed multiplier to delta
+    const adjustedDelta = delta * speedMultiplier;
+
     // WAIT MODE - Bottle is being processed at a machine
     if (bottle.mode === "wait") {
       // Keep bottle positioned at destination
@@ -29,7 +35,7 @@ export default function AnimatedBottle({ bottle, from, to, onDone }) {
         ref.current.position.set(to.x, 1.2, to.z);
       }
       
-      bottle.waitTime += delta;
+      bottle.waitTime += adjustedDelta;
 
       // Gradual filling animation
       if (bottle.stage === "fill") {
@@ -64,7 +70,7 @@ export default function AnimatedBottle({ bottle, from, to, onDone }) {
     }
 
     // MOVE MODE - Bottle is moving along conveyor
-    bottle.progress += delta * bottle.speed;
+    bottle.progress += adjustedDelta * bottle.speed;
     bottle.progress = Math.min(bottle.progress, 1);
 
     // Calculate position along path
