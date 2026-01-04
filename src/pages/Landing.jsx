@@ -32,7 +32,7 @@ export default function Landing() {
           WebkitTextFillColor: 'transparent',
           marginBottom: '16px'
         }}>
-          Smart Bottle Factory Simulator
+          EcoSim.flow — Smart Factory Simulator
         </h1>
         
         {/* Subtitle */}
@@ -43,13 +43,13 @@ export default function Landing() {
           margin: '0 auto 40px',
           lineHeight: '1.8'
         }}>
-          Experience Industry 4.0 with our interactive factory simulation. 
-          Optimize production, reduce costs, and maximize efficiency in real-time.
+          Design, simulate, and optimize Industry 4.0 factory lines before investing capital.
+          Build in 2D, visualize in 3D, and quantify ROI with IoT + AI.
         </p>
         
         {/* CTA Button */}
         <Link 
-          to="/dashboard" 
+          to="/builder" 
           style={{
             display: 'inline-block',
             padding: '16px 40px',

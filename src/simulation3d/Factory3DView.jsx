@@ -11,6 +11,7 @@ import CapperMachine from "./CapperMachine";
 import LabelerMachine from "./LabelerMachine";
 import PackagingMachine from "./PackagingMachine";
 import AnimatedBottle from "./AnimatedBottle";
+import I40Panel from "../components/ui/I40Panel";
 
 // Simple conveyor segment between two points
 function ConveyorSegment({ from, to }) {
@@ -735,6 +736,9 @@ export default function Factory3DView() {
           </div>
         </div>
       </div>
+
+      {/* Industry 4.0 Panel */}
+      <I40Panel />
     </div>
   );
 }
